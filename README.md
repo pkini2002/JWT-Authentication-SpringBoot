@@ -171,10 +171,17 @@ class MyConfig {
 <br>
 
 ### Steps to implement JWT Token
+<br>
 
 - Make sure `spring-boot-starter-security` is there in pom.xml
+
+<br>
+
 - Create Class `JWTAthenticationEntryPoint` that implements `AuthenticationEntryPoint`. The method of this class is called whenever an exception is thrown due to an
-- unauthenticated user trying to access the resource that required authentication.
+
+<br>
+
+- Unauthenticated user trying to access the resource that required authentication.
 
 <br>
 
