@@ -340,27 +340,63 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 @Configuration
 public class SecurityConfig {
     @Autowired
-    private JwtAuthenticationEntryPoint point;
+    private JWTAthenticationEntryPoint point;
     @Autowired
-    private JwtAuthenticationFilter filter;
+    private JWTAuthenticationFilter filter;
 
-    @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http.csrf(csrf -> csrf.disable())
-                .authorizeRequests().
-                requestMatchers("/test").authenticated().requestMatchers("/auth/login").permitAll()
-                .anyRequest()
-                .authenticated()
-                .and().exceptionHandling(ex -> ex.authenticationEntryPoint(point))
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
-        http.addFilterBefore(filter, UsernamePasswordAuthenticationFilter.class);
+        // configuration
+        http.csrf(csrf->csrf.disable())
+                .cors(cors->cors.disable())
+                .authorizeHttpRequests(auth->auth.requestMatchers("/home/**").authenticated()
+                        .requestMatchers("/auth/login").permitAll().anyRequest()
+                        .authenticated())
+                        .exceptionHandling(ex->ex.authenticationEntryPoint(point))
+                        .sessionManagement(session->session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+        http.addFilterBefore(filter,UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
 }
 ```
 <br>
 
-- Create `JWTRequest` and `JWTResponse` to receive request data and send a Login success response.
+- Create `JWTRequest` and `JWTResponse` in models package to receive request data and send a Login success response.
+
+> JWTRequest
+
+<br>
+
+```
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+@ToString
+public class JwtRequest {
+    private String email;
+    private String password;
+}
+
+```
+<br>
+
+> JWTResponse
+
+```
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+@ToString
+public class JwtResponse {
+    private String jwtToken;
+    private String username;
+}
+
+```
+
 <br>
 
 - Create login api to accept username and password and return token if username and password is correct.
