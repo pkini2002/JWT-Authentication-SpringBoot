@@ -8,8 +8,12 @@ A JWT is made up of three parts:
 - `Payload` : The payload is the main body of the token and contains the claims, which are statements about the user or other entity.
 - `Signature` : The signature is used to verify the token's integrity. It is created by signing the header and payload with a secret or public/private key pair.
 
+<br>
+
 When a user logs in to a web application, the server generates a JWT and sends it back to the client. The client can then store the token in local storage or session storage.
 When the user makes subsequent requests to the server, the client includes the JWT in the request header. The server can then verify the token and authenticate the user.
+
+<br>
 
 ## Architecture of JWT Authentication Flow
 
@@ -18,6 +22,8 @@ When the user makes subsequent requests to the server, the client includes the J
 ## Steps to implement the project
 
 - Navigate to <a href="https://start.spring.io/">Spring Initializr </a> and create a new Spring Boot Project
+
+  <br>
 
 ### Specifications
 
@@ -47,10 +53,12 @@ When the user makes subsequent requests to the server, the client includes the J
     <td>17</td>
   </tr>
 </table>
+<br>
 
 ### Dependencies Used
 
 - Web Dependency
+<br>
 
 ```
 <dependency>
@@ -58,6 +66,8 @@ When the user makes subsequent requests to the server, the client includes the J
     <artifactId>spring-boot-starter-web</artifactId>
 </dependency>
 ```
+
+<br>
 
 - Security
 
@@ -67,6 +77,8 @@ When the user makes subsequent requests to the server, the client includes the J
     <artifactId>spring-boot-starter-security</artifactId>
 </dependency>
 ```
+
+<br>
 
 - Lombok
 
@@ -78,7 +90,10 @@ When the user makes subsequent requests to the server, the client includes the J
 </dependency>
 ```
 
+<br>
+
 - JWT Dependencies
+<br>
 
 ```
  <!-- https://mvnrepository.com/artifact/io.jsonwebtoken/jjwt-api -->
@@ -105,9 +120,12 @@ When the user makes subsequent requests to the server, the client includes the J
 </dependency>
 ```
 
+<br>
+
 ### Steps
 
 - Create an Endpoint to be secured by creating a controller package in order to create views
+<br>
 
 ```
 @RestController
@@ -121,7 +139,10 @@ public class HomeController {
 }
 ```
 
+<br>
+
 - Create In-Memory User with UserDetailService Bean
+<br>
 
 ```
 @Configuration
@@ -147,11 +168,15 @@ class MyConfig {
 }
 ```
 
+<br>
+
 ### Steps to implement JWT Token
 
 - Make sure `spring-boot-starter-security` is there in pom.xml
 - Create Class `JWTAthenticationEntryPoint` that implements `AuthenticationEntryPoint`. The method of this class is called whenever an exception is thrown due to an
 - unauthenticated user trying to access the resource that required authentication.
+
+<br>
 
 ```
 @Component
@@ -165,7 +190,11 @@ public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
 }
 ```
 
+<br>
+
 - Create the `JWTHelper` class This class contains a method related to perform operations with jwt tokens like generateToken, validateToken, etc.
+
+<br>
 
 ```
 @Component
@@ -229,12 +258,15 @@ public class JwtHelper {
 }
 ```
 
+<br>
+
 - Create `JWTAuthenticationFilter` that extends `OncePerRequestFilter` and override method and write the logic to check the token that is comming in header. We have to write 5 important logic
      - Get Token from request
      - Validate Token
      - GetUsername from token
      - Load user associated with this token
      - Set Authentication
+<br>
 
 ```
 @Component
@@ -291,7 +323,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 }
 ```
 
+<br>
+
 - Configure spring security in configuration file:
+
+<br>
 
 ```
 @Configuration
@@ -315,9 +351,14 @@ public class SecurityConfig {
     }
 }
 ```
+<br>
 
 - Create `JWTRequest` and `JWTResponse` to receive request data and send a Login success response.
+<br>
+
 - Create login api to accept username and password and return token if username and password is correct.
+
+<br>
 
 ```
 @RestController
@@ -360,6 +401,6 @@ public class AuthController {
     }
 }
 ```
-
+<br>
 - Test the application
      
