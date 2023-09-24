@@ -228,3 +228,138 @@ public class JwtHelper {
     }
 }
 ```
+
+- Create `JWTAuthenticationFilter` that extends `OncePerRequestFilter` and override method and write the logic to check the token that is comming in header. We have to write 5 important logic
+     - Get Token from request
+     - Validate Token
+     - GetUsername from token
+     - Load user associated with this token
+     - Set Authentication
+
+```
+@Component
+public class JwtAuthenticationFilter extends OncePerRequestFilter {
+    private Logger logger = LoggerFactory.getLogger(OncePerRequestFilter.class);
+    @Autowired
+    private JwtHelper jwtHelper;
+    @Autowired
+    private UserDetailsService userDetailsService;
+
+    @Override
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
+        //Authorization
+        String requestHeader = request.getHeader("Authorization");
+        //Bearer 2352345235sdfrsfgsdfsdf
+        logger.info(" Header :  {}", requestHeader);
+        String username = null;
+        String token = null;
+        if (requestHeader != null && requestHeader.startsWith("Bearer")) {
+            //looking good
+            token = requestHeader.substring(7);
+            try {
+                username = this.jwtHelper.getUsernameFromToken(token);
+            } catch (IllegalArgumentException e) {
+                logger.info("Illegal Argument while fetching the username !!");
+                e.printStackTrace();
+            } catch (ExpiredJwtException e) {
+                logger.info("Given jwt token is expired !!");
+                e.printStackTrace();
+            } catch (MalformedJwtException e) {
+                logger.info("Some changed has done in token !! Invalid Token");
+                e.printStackTrace();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        } else {
+            logger.info("Invalid Header Value !! ");
+        }
+        if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+            //fetch user detail from username
+            UserDetails userDetails = this.userDetailsService.loadUserByUsername(username);
+            Boolean validateToken = this.jwtHelper.validateToken(token, userDetails);
+            if (validateToken) {
+                //set the authentication
+                UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+                authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                SecurityContextHolder.getContext().setAuthentication(authentication);
+            } else {
+                logger.info("Validation fails !!");
+            }
+        }
+        filterChain.doFilter(request, response);
+    }
+}
+```
+
+- Configure spring security in configuration file:
+
+```
+@Configuration
+public class SecurityConfig {
+    @Autowired
+    private JwtAuthenticationEntryPoint point;
+    @Autowired
+    private JwtAuthenticationFilter filter;
+
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        http.csrf(csrf -> csrf.disable())
+                .authorizeRequests().
+                requestMatchers("/test").authenticated().requestMatchers("/auth/login").permitAll()
+                .anyRequest()
+                .authenticated()
+                .and().exceptionHandling(ex -> ex.authenticationEntryPoint(point))
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+        http.addFilterBefore(filter, UsernamePasswordAuthenticationFilter.class);
+        return http.build();
+    }
+}
+```
+
+- Create `JWTRequest` and `JWTResponse` to receive request data and send a Login success response.
+- Create login api to accept username and password and return token if username and password is correct.
+
+```
+@RestController
+@RequestMapping("/auth")
+public class AuthController {
+    @Autowired
+    private UserDetailsService userDetailsService;
+
+    @Autowired
+    private AuthenticationManager manager;
+    @Autowired
+    private JwtHelper helper;
+    private Logger logger = LoggerFactory.getLogger(AuthController.class);
+    @PostMapping("/login")
+    public ResponseEntity<JwtResponse> login(@RequestBody JwtRequest request) {
+
+        this.doAuthenticate(request.getEmail(), request.getPassword());
+        UserDetails userDetails = userDetailsService.loadUserByUsername(request.getEmail());
+        String token = this.helper.generateToken(userDetails);
+
+        JwtResponse response = JwtResponse.builder()
+                .jwtToken(token)
+                .username(userDetails.getUsername()).build();
+        return new ResponseEntity<>(response, HttpStatus.OK);
+    }
+
+    private void doAuthenticate(String email, String password) {
+
+        UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(email, password);
+        try {
+            manager.authenticate(authentication);
+        } catch (BadCredentialsException e) {
+            throw new BadCredentialsException(" Invalid Username or Password  !!");
+        }
+    }
+
+    @ExceptionHandler(BadCredentialsException.class)
+    public String exceptionHandler() {
+        return "Credentials Invalid !!";
+    }
+}
+```
+
+- Test the application
+     
